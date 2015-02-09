@@ -58,7 +58,7 @@ def resize(files, config):
 
 def compare(imgs, config):
     minimum, name, results = None, None, []
-    local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cards", "no_alpha")
+    local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cards")
     for crop in imgs:
         print("*****************************")
         print("*****************************")
