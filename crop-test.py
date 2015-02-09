@@ -1,10 +1,11 @@
 import sys
 import os
-import shlex
-import subprocess
+import math
+import operator
 import ConfigParser
 import Image
 import ImageChops
+
 
 def load_config(section):
     config = ConfigParser.RawConfigParser()
@@ -18,53 +19,71 @@ def load_config(section):
 def crop(filename, config):
     img = Image.open(filename)
     w, h = img.size
+    left = int(w / float(config["left"]))
     top = int(h / float(config["top"]))
-    first = int(w / float(config["first"]))
+    right = int(w / float(config["right"]))
+    bottom = int(h / float(config["bottom"]))
     step = int(w / float(config["step"]))
-    res_w = int(w / float(config["res_w"]))
-    res_h = int(h/ float(config["res_h"]))
+    img_w = right - left
     print "w,h: %d %d" %(w, h)
+    print "left: %d" %left
     print "top: %d" %top
-    print "first: %d" %first
+    print "right: %d" %right
+    print "bottom: %d" %bottom
     print "step: %d" %step
-    print "res_w: %d" %res_w
-    print "res_h: %d" %res_h
-
-    cmd = "convert -crop %dx%d+{}+%d \"%s\" \"{}.jpg\"" %(res_w, res_h, top, filename)
-    print(cmd)
 
     files = []
     for i in xrange(3):
-        subprocess.Popen(shlex.split(cmd.format(first, str(i))))
-        print("saving {}.jpg".format(str(i)))
-        files.append("%d.jpg" %i)
-        first = first + res_w + step
+        im = img.crop((left, top, right, bottom))
+        im.save("%d.jpg" %i)
+        print("saving %d.jpg" %i)
+        files.append(im)
+        left = right + step
+        right = right + step + img_w
 
     return files
 
-def resize(files):
-    sizea = Image.open(files[0]).size
-    sizeb = Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "cards", "no_alpha", "Abomination.jpg")).size
+def resize(files, config):
+    sizea = files[0].size
+    box = [int(x) for x in config["local_art"].split(",")]
+    sizeb = (box[2] - box[0], box[3] - box[1])
     newx = min(sizea[0], sizeb[0])
     newy = min(sizea[1], sizeb[1])
-    imgs = []
+    resized = []
     for img in files:
-        imgs.append({img: Image.open(img).convert("L").resize((newx, newy), Image.ANTIALIAS)})
+        resized.append(img.convert("L").resize((newx, newy), Image.ANTIALIAS))
+        img.convert("L").resize((newx, newy), Image.ANTIALIAS).save("resized-bw.jpg")
 
-    return imgs
+    return resized
 
-def compare(imgs):
+def compare(imgs, config):
+    minimum, name, results = None, None, []
     local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cards", "no_alpha")
-    for image in os.listdir(local_path):
-        im = Image.open(os.path.join(local_path, image)).convert("L")
-        diff = ImageChops.difference(imgs[0]["0.jpg"], im)
-        # diff.save("tests/%s.jpg" %image)
+    for crop in imgs:
+        print("*****************************")
+        print("*****************************")
+        for image in os.listdir(local_path):
+            box = (int(x) for x in config["local_art"].split(","))
+            im = Image.open(os.path.join(local_path, image)).convert("L").crop(box)
+            h = ImageChops.difference(crop, im).histogram()
+            rms = math.sqrt(reduce(operator.add,
+                map(lambda h, i: h*(i**2), h, range(256))
+                ) / (float(im.size[0]) * im.size[1]))
+            print("%s: %d" %(image, rms))
+            if rms < minimum or minimum == None:
+                minimum = rms
+                name = image
+        results.append(name)
+        minimum, name = None, None
+
+    print(results)
+        
 
 def main(filename, kind):
     config = load_config(kind)
     files = crop(filename, config)
-    imgs = resize(files)
-    compare(imgs)
+    imgs = resize(files, config)
+    compare(imgs, config)
 
 if __name__ == "__main__":
     if not len(sys.argv) >= 2:
@@ -73,5 +92,5 @@ if __name__ == "__main__":
         try:
             kind = sys.argv[2]
         except IndexError:
-            kind = "full"
+            kind = "portrait"
         main(sys.argv[1], kind)
