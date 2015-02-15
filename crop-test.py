@@ -1,7 +1,6 @@
 import sys
 import os
 import math
-import operator
 import ConfigParser
 import Image
 import ImageChops
@@ -66,9 +65,8 @@ def compare(imgs, config):
             box = (int(x) for x in config["local_art"].split(","))
             im = Image.open(os.path.join(local_path, image)).convert("L").crop(box)
             h = ImageChops.difference(crop, im).histogram()
-            rms = math.sqrt(reduce(operator.add,
-                map(lambda h, i: h*(i**2), h, range(256))
-                ) / (float(im.size[0]) * im.size[1]))
+            sq = (value * (idx**2) for idx, value in enumerate(h))
+            rms = math.sqrt(sum(sq) / float(im.size[0] * im.size[1]))
             print("%s: %d" %(image, rms))
             if rms < minimum or minimum == None:
                 minimum = rms

@@ -2,3 +2,4 @@
 *.png
 !/cards/*
 crop-steps.txt
+phantomjs/
