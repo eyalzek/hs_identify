@@ -29,7 +29,12 @@ def screenshot(hwnd, filename):
     sleep(.2) #lame way to allow screen to draw before taking shot
     newDC.BitBlt((0,0),(w, h) , myDC, (0,0), win32con.SRCCOPY)
     myBitMap.Paint(newDC)
-    myBitMap.SaveBitmapFile(newDC, "c:\\" + filename)
+    path = "c:\\Temp\\" + filename
+    try:
+        myBitMap.SaveBitmapFile(newDC, path)
+        print("file saved as: %s" %path)
+    except IOError:
+        print("file failed to save")
 
 def main():
     try:
