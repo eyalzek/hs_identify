@@ -14,8 +14,13 @@ def get_windows_bytitle(title_text):
 
 def screenshot(hwnd, filename):
     l,t,r,b = win32gui.GetClientRect(hwnd)
+    fs = False
     h = b - t
     w = r - l
+    if w == 0 or h == 0: # probably means the app is in fullscreen
+        w, h = win32api.GetSystemMetrics(0), win32api.GetSystemMetrics(1)
+        fs = True
+    
     hDC = win32gui.GetDC(hwnd)
     myDC = win32ui.CreateDCFromHandle(hDC)
     newDC = myDC.CreateCompatibleDC()
@@ -25,7 +30,10 @@ def screenshot(hwnd, filename):
 
     newDC.SelectObject(myBitMap)
 
-    win32gui.SetForegroundWindow(hwnd)
+    if fs:
+        win32gui.ShowWindow(hwnd, 3)
+    else:
+        win32gui.SetForegroundWindow(hwnd)
     sleep(.2) #lame way to allow screen to draw before taking shot
     newDC.BitBlt((0,0),(w, h) , myDC, (0,0), win32con.SRCCOPY)
     myBitMap.Paint(newDC)
@@ -39,11 +47,10 @@ def screenshot(hwnd, filename):
 def main():
     try:
         hwnd = get_windows_bytitle("Hearthstone")[0]
+        screenshot(hwnd, str(datetime.now().microsecond) + ".bmp")
     except IndexError:
         print("Hearthstone window not found")
         sys.exit(1)
-
-    screenshot(hwnd, str(datetime.now().microsecond) + ".bmp")
 
 
 if __name__ == "__main__":
