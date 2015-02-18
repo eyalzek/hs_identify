@@ -74,7 +74,8 @@ def compare(imgs, config):
         results.append(name)
         minimum, name = None, None
 
-    print(results)
+    fixed_results = [name.replace("|", ":") for name in results]
+    print(fixed_results)
         
 
 def main(filename, kind):
