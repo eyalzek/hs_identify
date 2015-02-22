@@ -1,6 +1,5 @@
 import sys
 import os
-import math
 import ConfigParser
 import Image
 import ImageChops
@@ -24,12 +23,6 @@ def crop(filename, config):
     bottom = int(h / float(config["bottom"]))
     step = int(w / float(config["step"]))
     img_w = right - left
-    print "w,h: %d %d" %(w, h)
-    print "left: %d" %left
-    print "top: %d" %top
-    print "right: %d" %right
-    print "bottom: %d" %bottom
-    print "step: %d" %step
 
     files = []
     for i in xrange(3):
@@ -59,7 +52,6 @@ def compare(imgs, config):
     minimum, name, results = None, None, []
     local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cards")
     for crop in imgs:
-        print("*****************************")
         print("*****************************")
         total = None
         for image in os.listdir(local_path):
