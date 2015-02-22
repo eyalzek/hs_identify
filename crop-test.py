@@ -61,20 +61,22 @@ def compare(imgs, config):
     for crop in imgs:
         print("*****************************")
         print("*****************************")
+        total = None
         for image in os.listdir(local_path):
             box = (int(x) for x in config["local_art"].split(","))
             im = Image.open(os.path.join(local_path, image)).convert("L").crop(box)
             h = ImageChops.difference(crop, im).histogram()
-            sq = (value * (idx**2) for idx, value in enumerate(h))
-            rms = math.sqrt(sum(sq) / float(im.size[0] * im.size[1]))
-            print("%s: %d" %(image, rms))
-            if rms < minimum or minimum == None:
-                minimum = rms
+            if not total:
+                total = sum(h)
+            black_pixels = total - sum(h[:50]) # check how many pixels exist in the first 50 indexes of the histogram
+            print("%s: %d" %(image, black_pixels))
+            if black_pixels < minimum or minimum == None:
+                minimum = black_pixels
                 name = image
         results.append(name)
         minimum, name = None, None
 
-    fixed_results = [name.replace("|", ":") for name in results]
+    fixed_results = [name.replace("#", ":") for name in results]
     print(fixed_results)
         
 

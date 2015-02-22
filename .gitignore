@@ -1,5 +1,6 @@
 *.jpg
 *.png
+*.bmp
 !/cards/*
 crop-steps.txt
 phantomjs/
