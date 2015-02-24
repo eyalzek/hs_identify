@@ -1,3 +1,4 @@
+import os
 import win32gui
 import win32ui
 import win32con
@@ -37,10 +38,14 @@ def screenshot(hwnd, path):
     newDC.BitBlt((0,0),(w, h) , myDC, (0,0), win32con.SRCCOPY)
     myBitMap.Paint(newDC)
     try:
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
         myBitMap.SaveBitmapFile(newDC, path)
         print("file saved as: %s" %path)
     except IOError:
         print("file failed to save")
+    except OSError:
+        print("failed to create folder: %s" %os.path.dirname(path))
 
 def get(window_name, path):
     try:

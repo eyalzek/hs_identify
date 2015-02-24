@@ -2,6 +2,11 @@
 *.jpg
 *.png
 *.bmp
-!/cards/*
+*.db
+!/cards/*.jpg
 crop-steps.txt
+crop-test.spec
+output.txt
 phantomjs/
+build/
+dist/

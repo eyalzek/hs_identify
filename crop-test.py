@@ -7,6 +7,7 @@ import screenshot
 
 def load_config(section):
     config = ConfigParser.RawConfigParser()
+    # print("filed found? %b" %os.path.exists("dimensions_config"))
     config.read("dimensions_config")
     result = {}
     for field in config.items(section):
@@ -27,8 +28,6 @@ def crop(filename, config):
     files = []
     for i in xrange(3):
         im = img.crop((left, top, right, bottom))
-        im.save("%d.jpg" %i)
-        print("saving %d.jpg" %i)
         files.append(im)
         left = right + step
         right = right + step + img_w
@@ -44,7 +43,6 @@ def resize(files, config):
     resized = []
     for img in files:
         resized.append(img.convert("L").resize((newx, newy), Image.ANTIALIAS))
-        img.convert("L").resize((newx, newy), Image.ANTIALIAS).save("resized-bw.jpg")
 
     return resized
 
@@ -55,21 +53,28 @@ def compare(imgs, config):
         print("*****************************")
         total = None
         for image in os.listdir(local_path):
-            box = (int(x) for x in config["local_art"].split(","))
-            im = Image.open(os.path.join(local_path, image)).convert("L").crop(box)
-            h = ImageChops.difference(crop, im).histogram()
-            if not total:
-                total = sum(h)
-            black_pixels = total - sum(h[:50]) # check how many pixels exist in the first 50 indexes of the histogram
-            print("%s: %d" %(image, black_pixels))
-            if black_pixels < minimum or minimum == None:
-                minimum = black_pixels
-                name = image
+            if ".jpg" in image:
+                box = (int(x) for x in config["local_art"].split(","))
+                im = Image.open(os.path.join(local_path, image)).convert("L").crop(box)
+                h = ImageChops.difference(crop, im).histogram()
+                if not total:
+                    total = sum(h)
+                black_pixels = total - sum(h[:50]) # check how many pixels exist in the first 50 indexes of the histogram
+                print("%s: %d" %(image, black_pixels))
+                if black_pixels < minimum or minimum == None:
+                    minimum = black_pixels
+                    name = image
         results.append(name)
         minimum, name = None, None
 
     fixed_results = [name.replace("#", ":") for name in results]
     print(fixed_results)
+    with open("output.txt", "a+") as f:
+        for result in fixed_results:
+            f.write(result.replace(".jpg", " "))
+        f.write("\n")
+        os.startfile("output.txt", "open")
+        f.close()
         
 
 def main(path, kind):
