@@ -2,7 +2,7 @@ import os
 import ConfigParser
 import Image
 import ImageChops
-import screenshot
+import Window
 
 
 def load_config(section):
@@ -47,25 +47,22 @@ def resize(files, config):
     return resized
 
 def compare(imgs, config):
-    minimum, name, results = None, None, []
+    maximum, name, results = None, None, []
     local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cards")
     for crop in imgs:
         print("*****************************")
-        total = None
         for image in os.listdir(local_path):
             if ".jpg" in image:
                 box = (int(x) for x in config["local_art"].split(","))
                 im = Image.open(os.path.join(local_path, image)).convert("L").crop(box)
                 h = ImageChops.difference(crop, im).histogram()
-                if not total:
-                    total = sum(h)
-                black_pixels = total - sum(h[:50]) # check how many pixels exist in the first 50 indexes of the histogram
+                black_pixels = sum(h[:50]) # check how many pixels exist in the first 50 indexes of the histogram
                 print("%s: %d" %(image, black_pixels))
-                if black_pixels < minimum or minimum == None:
-                    minimum = black_pixels
+                if black_pixels > maximum or maximum == None:
+                    maximum = black_pixels
                     name = image
         results.append(name)
-        minimum, name = None, None
+        maximum, name = None, None
 
     fixed_results = [name.replace("#", ":") for name in results]
     print(fixed_results)
@@ -79,7 +76,8 @@ def compare(imgs, config):
 
 def main(path, kind):
     config = load_config(kind)
-    screenshot.get("Hearthstone", path)
+    window = Window(path, "Hearthstone")
+    window.screenshot()
     files = crop(path, config)
     imgs = resize(files, config)
     compare(imgs, config)
