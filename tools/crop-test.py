@@ -1,8 +1,8 @@
+import sys
 import os
 import ConfigParser
 import Image
 import ImageChops
-import screenshot
 
 
 def load_config(section):
@@ -72,12 +72,19 @@ def compare(imgs, config):
     print(fixed_results)
         
 
-def main(path, kind):
+def main(filename, kind):
     config = load_config(kind)
-    screenshot.get("Hearthstone", path)
-    files = crop(path, config)
+    files = crop(filename, config)
     imgs = resize(files, config)
     compare(imgs, config)
 
 if __name__ == "__main__":
-    main("c:\\Temp\\test.bmp", "portrait")
+    if not len(sys.argv) >= 2:
+        print("usage: {} image-name [full/label]".format(sys.argv[0]))
+    else:
+        try:
+            kind = sys.argv[2]
+        except IndexError:
+            kind = "portrait"
+        main(sys.argv[1], kind)
+        
