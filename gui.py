@@ -3,7 +3,9 @@ import ConfigParser
 import Image
 import ImageChops
 from Tkinter import *
-import Window
+from Window import Window
+from Webpage import Webpage
+
 
 class App(Frame):
     """App window"""
@@ -13,6 +15,7 @@ class App(Frame):
         self.path = path
         self.config = self.load_config(section)
         self.window = Window(path, "Hearthstone")
+        self.webpage = self.init_webpage()
         self.button = Button(self.parent, text="Detect Pick")
         self.button.bind("<Button-1>", self.run)
         self.button.pack()
@@ -38,6 +41,19 @@ class App(Frame):
             result[field[0]] = field[1]
 
         return result
+
+    def init_webpage(self):
+        p = Webpage()
+        heroClass = self.detectClass()
+        p.choose_class(heroClass)
+        return p
+        # p.enter_picks(picks)
+        # print(p.get_values())
+        # p.make_pick(2)
+        # p.quit()
+
+    def detectClass(self):
+        pass
 
     def crop(self):
         img = Image.open(self.path)

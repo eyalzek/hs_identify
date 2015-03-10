@@ -74,13 +74,12 @@ def compare(imgs, config):
         f.close()
         
 
-def main(path, kind):
-    config = load_config(kind)
+def main(path):
     window = Window(path, "Hearthstone")
     window.screenshot()
-    files = crop(path, config)
-    imgs = resize(files, config)
-    compare(imgs, config)
+    files = crop(path, load_config("cards"))
+    imgs = resize(files, load_config("cards"))
+    compare(imgs, load_config("cards"))
 
 if __name__ == "__main__":
-    main("c:\\Temp\\test.bmp", "portrait")
+    main("c:\\Temp\\test.bmp")

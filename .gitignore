@@ -4,9 +4,11 @@
 *.bmp
 *.db
 !/cards/*.jpg
+!/heroes/*.png
 crop-steps.txt
 output.txt
 phantomjs/
 build/
 dist/
 stuff/
+test-hero.py

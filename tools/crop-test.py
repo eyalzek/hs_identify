@@ -50,12 +50,13 @@ def resize(files, config):
 
 def compare(imgs, config):
     maximum, name, results = None, None, []
-    local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cards")
+    local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "heroes")
     for crop in imgs:
         print("*****************************")
         for image in os.listdir(local_path):
             box = (int(x) for x in config["local_art"].split(","))
             im = Image.open(os.path.join(local_path, image)).convert("L").crop(box)
+            im.save(image)
             h = ImageChops.difference(crop, im).histogram()
             black_pixels = sum(h[:50]) # check how many pixels exist in the first 50 indexes of the histogram
             print("%s: %d" %(image, black_pixels))
@@ -82,6 +83,6 @@ if __name__ == "__main__":
         try:
             kind = sys.argv[2]
         except IndexError:
-            kind = "portrait"
+            kind = "heroes"
         main(sys.argv[1], kind)
         

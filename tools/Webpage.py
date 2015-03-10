@@ -1,3 +1,4 @@
+import sys
 import time
 from selenium import webdriver
 
@@ -57,3 +58,18 @@ class Webpage(object):
     def quit(self):
         print("closing page...")
         self.driver.quit()
+
+        
+def main(heroClass, picks):
+    p = Webpage()
+    p.choose_class(heroClass)
+    p.enter_picks(picks)
+    print(p.get_values())
+    p.make_pick(2)
+    p.quit()
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("usage: python script.py class 'pick1,pick2,pick3'")
+    else:
+        main(sys.argv[1], sys.argv[2].split(","))
