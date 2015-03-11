@@ -15,7 +15,7 @@ class Webpage(object):
         self.driver.get(self.url)
         self.screenshot("homepage")
         self.print_title()
-    
+
     def choose_class(self, heroClass):
         tag = self.driver.find_element_by_css_selector("img[title='%s']" %heroClass)
         tag.click()
@@ -29,7 +29,7 @@ class Webpage(object):
             self.driver.execute_script('$(\'%s\').select2(\'val\', \'%s\');' %(selector, value))
             self.driver.execute_script('$(\'%s\').trigger(\'select2-close\');' %selector)
             self.driver.execute_script('$(\'%s\').trigger(\'change\');' %selector)
-            time.sleep(0.2)
+            time.sleep(0.4)
             self.screenshot("pick%d" %i)
 
     def get_values(self):

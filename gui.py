@@ -2,39 +2,54 @@ import os
 import ConfigParser
 import Image
 import ImageChops
-from Tkinter import *
+from Tkinter import Tk, Frame, Button, Label
+from tkMessageBox import askokcancel
 from Window import Window
 from Webpage import Webpage
 
 
 class App(Frame):
     """App window"""
-    def __init__(self, parent, path, section):
+    def __init__(self, parent, path):
         Frame.__init__(self, parent)
         self.parent = parent
         self.path = path
-        self.config = self.load_config(section)
-        self.window = Window(path, "Hearthstone")
-        self.webpage = self.init_webpage()
-        self.button = Button(self.parent, text="Detect Pick")
-        self.button.bind("<Button-1>", self.run)
-        self.button.pack()
+        self.window = Window(path, "Chrome")
+        self.webpage = Webpage()
+        self.detect_hero = Button(self.parent, text="Detect Hero Class")
+        self.detect_hero.bind("<Button-1>", lambda event, kind="heroes": self.run(event, kind))
+        self.detect_hero.pack()
 
-    def run(self, event):
+    def run(self, event, kind):
+        original_text = event.widget["text"]
         event.widget["text"] = "Working..."
         event.widget["state"] = "disabled"
         self.parent.update_idletasks()
         self.window.screenshot()
-        self.crop()
-        self.resize()
-        Label(self.parent, text="    |    ".join(self.compare())).pack()
-        event.widget["text"] = "Detect Pick"
-        event.widget["state"] = "active"
-        # results = self.compare()
-        
+        self.crop(kind)
+        results = self.compare(kind)
+        # Label(self.parent, text="    |    ".join(results)).pack()
+        if kind == "cards":
+            self.webpage.enter_picks(results)
+        for i in xrange(len(results)):
+            if kind == "heroes":
+                command = lambda x=results[i][:-4]: self.webpage.choose_class(x)
+            else:
+                command = lambda x=i: self.webpage.make_pick(i + 1)
+            Button(self.parent, text=results[i][:-4], command=command).pack()
+        event.widget["text"] = original_text
+        if kind == "heroes":
+            self.create_detect_button()
+        else:
+            event.widget["state"] = "active"
+
+    def create_detect_button(self):
+        self.detect_pick = Button(self.parent, text="Detect Pick")
+        self.detect_pick.bind("<Button-1>", lambda event, kind="cards": self.run(event, kind))
+        self.detect_pick.pack()
+
     def load_config(self, section):
         config = ConfigParser.RawConfigParser()
-        # print("filed found? %b" %os.path.exists("dimensions_config"))
         config.read("dimensions_config")
         result = {}
         for field in config.items(section):
@@ -42,27 +57,15 @@ class App(Frame):
 
         return result
 
-    def init_webpage(self):
-        p = Webpage()
-        heroClass = self.detectClass()
-        p.choose_class(heroClass)
-        return p
-        # p.enter_picks(picks)
-        # print(p.get_values())
-        # p.make_pick(2)
-        # p.quit()
-
-    def detectClass(self):
-        pass
-
-    def crop(self):
+    def crop(self, section):
         img = Image.open(self.path)
+        config = self.load_config(section)
         w, h = img.size
-        left = int(w / float(self.config["left"]))
-        top = int(h / float(self.config["top"]))
-        right = int(w / float(self.config["right"]))
-        bottom = int(h / float(self.config["bottom"]))
-        step = int(w / float(self.config["step"]))
+        left = int(w / float(config["left"]))
+        top = int(h / float(config["top"]))
+        right = int(w / float(config["right"]))
+        bottom = int(h / float(config["bottom"]))
+        step = int(w / float(config["step"]))
         img_w = right - left
 
         files = []
@@ -74,27 +77,27 @@ class App(Frame):
 
         self.files = files
 
-    def resize(self):
+    def resize(self, section):
+        config = self.load_config(section)
         sizea = self.files[0].size
-        box = [int(x) for x in self.config["local_art"].split(",")]
+        box = [int(x) for x in config["local_art"].split(",")]
         sizeb = (box[2] - box[0], box[3] - box[1])
         newx = min(sizea[0], sizeb[0])
         newy = min(sizea[1], sizeb[1])
-        resized = []
-        for img in self.files:
-            resized.append(img.convert("L").resize((newx, newy), Image.ANTIALIAS))
+        return (newx, newy)
 
-        self.files = resized
-
-    def compare(self):
+    def compare(self, kind):
         maximum, name, results = None, None, []
-        local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cards")
+        local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), kind)
+        config = self.load_config(kind)
+        resize_box = self.resize(kind)
         for crop in self.files:
             print("*****************************")
+            crop = crop.convert("L").resize(resize_box, Image.ANTIALIAS)
             for image in os.listdir(local_path):
-                if ".jpg" in image:
-                    box = (int(x) for x in self.config["local_art"].split(","))
-                    im = Image.open(os.path.join(local_path, image)).convert("L").crop(box)
+                if ".jpg" in image or ".png" in image:
+                    box = (int(x) for x in config["local_art"].split(","))
+                    im = Image.open(os.path.join(local_path, image)).convert("L").crop(box).resize(resize_box, Image.ANTIALIAS)
                     h = ImageChops.difference(crop, im).histogram()
                     black_pixels = sum(h[:50]) # check how many pixels exist in the first 50 indexes of the histogram
                     print("%s: %d" %(image, black_pixels))
@@ -108,12 +111,18 @@ class App(Frame):
         print(fixed_results)
         return fixed_results
 
-def main(path, section):
+    def ask_quit(self):
+        message = "Quit the program?"
+        if askokcancel("Quit", message):
+            self.webpage.quit()
+            self.parent.destroy()
+
+def main(path):
     root = Tk()
     root.geometry("200x200")
-    app = App(root, path, section)
-    # root.protocol("WM_DELETE_WINDOW", app.ask_quit)
+    app = App(root, path)
+    root.protocol("WM_DELETE_WINDOW", app.ask_quit)
     root.mainloop()
 
 if __name__ == "__main__":
-    main("c:\\Temp\\test.bmp", "portrait")
+    main("c:\\Temp\\test.bmp")
