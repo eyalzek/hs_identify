@@ -2,7 +2,7 @@ import os
 import ConfigParser
 import Image
 import ImageChops
-from Tkinter import Tk, Frame, Button, Label
+from Tkinter import Tk, Frame, Button, Label, Listbox
 from tkMessageBox import askokcancel
 from Window import Window
 from Webpage import Webpage
@@ -14,11 +14,27 @@ class App(Frame):
         Frame.__init__(self, parent)
         self.parent = parent
         self.path = path
-        self.window = Window(path, "Chrome")
+        self.pick_buttons = []
+        self.initialize()
+
+    def initialize(self):
+        self.window = Window(self.path, "Chrome")
         self.webpage = Webpage()
-        self.detect_hero = Button(self.parent, text="Detect Hero Class")
+        self.header = Frame(self.parent, width=150, height=50)
+        self.header.pack(fill="x")
+        self.button_frame = Frame(self.parent, width=150, height=50)
+        self.button_frame.pack(fill="x")
+        self.choices_list = Listbox(self.parent)
+        self.choices_list.insert("end", "Choices:")
+        self.choices_list.pack(fill="both", side="left")
+        self.pick_list = Listbox(self.parent)
+        self.pick_list.insert("end", "Pick:")
+        self.pick_list.pack(fill="both", side="left")
+        for i in xrange(3):
+            self.pick_buttons.append(Button(self.button_frame))
+        self.detect_hero = Button(self.header, text="Detect Hero Class")
         self.detect_hero.bind("<Button-1>", lambda event, kind="heroes": self.run(event, kind))
-        self.detect_hero.pack()
+        self.detect_hero.pack(side="left", padx=10)
 
     def run(self, event, kind):
         original_text = event.widget["text"]
@@ -28,25 +44,48 @@ class App(Frame):
         self.window.screenshot()
         self.crop(kind)
         results = self.compare(kind)
-        # Label(self.parent, text="    |    ".join(results)).pack()
+        self.choices_list.insert("end", " | ".join(results))
         if kind == "cards":
-            self.webpage.enter_picks(results)
-        for i in xrange(len(results)):
-            if kind == "heroes":
-                command = lambda x=results[i][:-4]: self.webpage.choose_class(x)
-            else:
-                command = lambda x=i: self.webpage.make_pick(i + 1)
-            Button(self.parent, text=results[i][:-4], command=command).pack()
-        event.widget["text"] = original_text
-        if kind == "heroes":
-            self.create_detect_button()
+            self.do_cards(event, results, original_text)
         else:
-            event.widget["state"] = "active"
+            self.do_heroes(event, results, original_text)
+
+    def do_cards(self, event, results, original_text):
+        self.webpage.enter_picks(results)
+        self.unpack_buttons()
+        values = self.webpage.get_values()
+        for i in xrange(len(results)):
+            command = lambda x=i+1, text=results[i][:-4]: self.card_command(x, text)
+            self.pick_buttons[i].config(text="%s - %d" %(results[i][:-4], values[i]), command=command)
+            self.pick_buttons[i].pack(side="left", padx=10)
+        event.widget["text"] = original_text
+        event.widget["state"] = "active"
+
+    def card_command(self, x, text):
+        self.pick_list.insert("end", text)
+        self.webpage.make_pick(x)
+
+    def do_heroes(self, event, results, original_text):
+        for i in xrange(len(results)):
+            command = lambda x=results[i][:-4]: self.hero_command(x)
+            self.pick_buttons[i].config(text=results[i][:-4], command=command)
+            self.pick_buttons[i].pack(side="left", padx=10)
+        Label(self.parent, text="    |    ".join(results)).pack()
+        event.widget["text"] = original_text
+        self.create_detect_button()
+
+    def hero_command(self, x):
+            self.pick_list.insert("end", x)
+            self.webpage.make_pick(x)
+
+    def unpack_buttons(self):
+        for button in self.pick_buttons:
+            button.pack_forget()
 
     def create_detect_button(self):
-        self.detect_pick = Button(self.parent, text="Detect Pick")
+        self.detect_pick = Button(self.header, text="Detect Pick")
         self.detect_pick.bind("<Button-1>", lambda event, kind="cards": self.run(event, kind))
-        self.detect_pick.pack()
+        self.detect_pick.pack(side="left", padx=10)
 
     def load_config(self, section):
         config = ConfigParser.RawConfigParser()
