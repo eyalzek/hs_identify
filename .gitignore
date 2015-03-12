@@ -12,3 +12,4 @@ build/
 dist/
 stuff/
 test-hero.py
+ghostdriver.log

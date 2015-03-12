@@ -1,8 +1,9 @@
 import os
+import time
 import ConfigParser
 import Image
 import ImageChops
-from Tkinter import Tk, Frame, Button, Label, Listbox
+from Tkinter import Tk, Frame, Button, Listbox
 from tkMessageBox import askokcancel
 from Window import Window
 from Webpage import Webpage
@@ -26,10 +27,10 @@ class App(Frame):
         self.button_frame.pack(fill="x")
         self.choices_list = Listbox(self.parent)
         self.choices_list.insert("end", "Choices:")
-        self.choices_list.pack(fill="both", side="left")
+        self.choices_list.pack(fill="both", side="left", expand=1)
         self.pick_list = Listbox(self.parent)
         self.pick_list.insert("end", "Pick:")
-        self.pick_list.pack(fill="both", side="left")
+        self.pick_list.pack(fill="both", side="left", expand=1)
         for i in xrange(3):
             self.pick_buttons.append(Button(self.button_frame))
         self.detect_hero = Button(self.header, text="Detect Hero Class")
@@ -46,37 +47,45 @@ class App(Frame):
         results = self.compare(kind)
         self.choices_list.insert("end", " | ".join(results))
         if kind == "cards":
+            self.detect_pick.unbind("<Button 1>")
             self.do_cards(event, results, original_text)
         else:
+            self.detect_hero.unbind("<Button 1>")
             self.do_heroes(event, results, original_text)
 
     def do_cards(self, event, results, original_text):
+        print results
         self.webpage.enter_picks(results)
-        self.unpack_buttons()
+        time.sleep(0.3) # to prevent getting '-' instead of the value
         values = self.webpage.get_values()
         for i in xrange(len(results)):
-            command = lambda x=i+1, text=results[i][:-4]: self.card_command(x, text)
-            self.pick_buttons[i].config(text="%s - %d" %(results[i][:-4], values[i]), command=command)
+            command = lambda x=i+1, text=results[i]: self.card_command(x, text)
+            self.pick_buttons[i].config(text="%s - %d" %(results[i], values[i]), command=command)
             self.pick_buttons[i].pack(side="left", padx=10)
         event.widget["text"] = original_text
-        event.widget["state"] = "active"
+        # event.widget["state"] = "active"
 
     def card_command(self, x, text):
+        self.unpack_buttons()
         self.pick_list.insert("end", text)
         self.webpage.make_pick(x)
+        self.detect_pick.config(state="active")
+        self.detect_pick.bind("<Button-1>", lambda event, kind="cards": self.run(event, kind))
 
     def do_heroes(self, event, results, original_text):
         for i in xrange(len(results)):
-            command = lambda x=results[i][:-4]: self.hero_command(x)
-            self.pick_buttons[i].config(text=results[i][:-4], command=command)
+            command = lambda x=results[i]: self.hero_command(x)
+            self.pick_buttons[i].config(text=results[i], command=command)
             self.pick_buttons[i].pack(side="left", padx=10)
-        Label(self.parent, text="    |    ".join(results)).pack()
+        # Label(self.parent, text="    |    ".join(results)).pack()
         event.widget["text"] = original_text
-        self.create_detect_button()
 
     def hero_command(self, x):
-            self.pick_list.insert("end", x)
-            self.webpage.make_pick(x)
+        self.unpack_buttons()
+        self.webpage.choose_class(x)
+        self.create_detect_button()
+        self.detect_pick.bind("<Button-1>", lambda event, kind="cards": self.run(event, kind))
+        self.pick_list.insert("end", x)
 
     def unpack_buttons(self):
         for button in self.pick_buttons:
@@ -84,7 +93,6 @@ class App(Frame):
 
     def create_detect_button(self):
         self.detect_pick = Button(self.header, text="Detect Pick")
-        self.detect_pick.bind("<Button-1>", lambda event, kind="cards": self.run(event, kind))
         self.detect_pick.pack(side="left", padx=10)
 
     def load_config(self, section):
@@ -143,7 +151,7 @@ class App(Frame):
                     if black_pixels > maximum or maximum == None:
                         maximum = black_pixels
                         name = image
-            results.append(name)
+            results.append(os.path.splitext(name)[0]) # remove file extension
             maximum, name = None, None
 
         fixed_results = [name.replace("#", ":") for name in results]
@@ -159,6 +167,7 @@ class App(Frame):
 def main(path):
     root = Tk()
     root.geometry("200x200")
+    root.wm_attributes("-topmost", 1)#, "-alpha", 0.5)  make app window always on top optionally make it transparent for future use
     app = App(root, path)
     root.protocol("WM_DELETE_WINDOW", app.ask_quit)
     root.mainloop()

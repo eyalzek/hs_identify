@@ -25,9 +25,13 @@ class Webpage(object):
     def enter_picks(self, picks):
         for i in xrange(len(picks)):
             selector = "#card%d" %(i + 1)
+            print('return $(\'%s option:contains("%s")\').val();' %(selector, picks[i].strip()))
             value = self.driver.execute_script('return $(\'%s option:contains("%s")\').val();' %(selector, picks[i].strip()))
+            print('$(\'%s\').select2(\'val\', \'%s\');' %(selector, value))
             self.driver.execute_script('$(\'%s\').select2(\'val\', \'%s\');' %(selector, value))
+            print('$(\'%s\').trigger(\'select2-close\');' %selector)
             self.driver.execute_script('$(\'%s\').trigger(\'select2-close\');' %selector)
+            print('$(\'%s\').trigger(\'change\');' %selector)
             self.driver.execute_script('$(\'%s\').trigger(\'change\');' %selector)
             time.sleep(0.4)
             self.screenshot("pick%d" %i)
