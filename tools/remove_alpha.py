@@ -1,7 +1,7 @@
 import os
 import Image
 
-path = "./cards/"
+path = "../new_cards/"
 
 for img in os.listdir(path):
     if ".png" in img:
@@ -9,4 +9,4 @@ for img in os.listdir(path):
         im.load()
         new = Image.new("RGB", im.size, (255, 255, 255))
         new.paste(im, mask=im.split()[3])
-        new.save(os.path.join(path, "no_alpha", img.replace("png", "jpg")), "JPEG", quality=100)
+        new.save(os.path.join(path, img.replace("png", "jpg")), "JPEG", quality=100)
